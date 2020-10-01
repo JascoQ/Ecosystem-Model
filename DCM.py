@@ -8,17 +8,16 @@ Created on Thu Jul  2 18:53:06 2020
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+import networkx as nx
+import matplotlib as mpl
+
 
 #Ðeterministic Continuous Model
-
-#FUNZIONA TUTTO BENINO MA SE I BASALS VANNO ESTINTI ACCADE CHE UNA VOLTA RIPESCATI
-#ESSENDO PRIVI DI PREDATORI INIZIANO A CRESCERE A DISMISURA
-#e non capisco perchè fa estinguere le altre specie!
 
 class DCM:
     
     def __init__(self):
-        self.S=2000
+        self.S=2500
         self.N=np.zeros(self.S)
         self.l_max=8
 
@@ -37,12 +36,15 @@ class DCM:
         #self.gamma[:,0]=-self.gamma[0]
         
         self.pool=list(range(self.S))
+        
         #Adding basal species
         self.N[0]=self.N_i
         self.population_t=np.empty((0,self.S))
         self.population_t=np.append(self.population_t,[self.N],axis=0)
-        self.N_species=[]
-        self.N_species=np.append(self.N_species,1)
+        self.species_t=[]
+        self.species_t=np.append(self.species_t,1)
+        self.G=nx.DiGraph()
+
         
     def Livings(self,pop=None):
         if (pop==None):
@@ -51,9 +53,9 @@ class DCM:
             living_list=np.where(pop!=0)
         return living_list
     
-    def Beings(self):
+    def Animals(self):
         being_list=np.where(self.N!=0)
-        being_list=np.setdiff1d(being_list,0) 
+        being_list=np.setdiff1d(being_list,0)
         return being_list
             
     def New_species(self):
@@ -94,16 +96,12 @@ class DCM:
                 
             
         
-    def get_index(self,ID,prey=False,predator=False):
+    def get_interaction(self,ID):
         
-        if (prey):
-            idx=np.where(self.gamma[ID]>0)
-        elif (predator):
-            idx=np.where(self.gamma[ID]<0)
+        preys_idx=np.where(self.gamma[ID]>0)
+        predators_idx=np.where(self.gamma[ID]<0)
                         
-        else:
-            print("Specify which kind of index for the ID")
-        return idx
+        return preys_idx,predators_idx
         
     
     def Extinction(self):
@@ -120,14 +118,14 @@ class DCM:
         if(self.Livings()[0][0]==0):
             basals_func=N_sel[0]*self.gamma0*self.R+N_sel[0]*np.dot(self.gamma[0],N0)
             dNdt=np.append(dNdt,basals_func)
-        for i in range(len(self.Beings())):
+        for i in range(len(self.Animals())):
             func=-self.alpha*N_sel[i]-self.beta*N_sel[i]**2+N_sel[i]*np.dot(self.gamma[i],N0)
             
             dNdt=np.append(dNdt,func)
             
         return dNdt
     
-    def plot_pop(self,Livings_only=True,N_species=True,yuplimit=200):
+    def plot_pop(self,Livings_only=True,species_t=True,yuplimit=False):
         t=len(self.population_t)
         if (Livings_only):
             for i in self.Livings()[0]:
@@ -146,9 +144,10 @@ class DCM:
                 else:
                     plt.plot(range(t),self.population_t[:,i])
                     plt.title("All Species Biomasses history")
-        if (N_species):
-            plt.plot(range(len(self.N_species)),self.N_species,label="N.Species",linestyle="dotted")
-            
+        if (species_t):
+            plt.plot(range(len(self.species_t)),self.species_t,label="N.Species",linestyle="dotted")
+        if(yuplimit==False):
+            yuplimit=np.max(self.population_t)
         plt.xlabel("Time")
         plt.ylabel("Species Biomass")
         plt.ylim(self.N_c,yuplimit)
@@ -158,7 +157,7 @@ class DCM:
         for migrant in range(I):
             self.New_species()
         self.population_t=np.append(self.population_t,[self.N],axis=0)
-        self.N_species=np.append(self.N_species,len(self.Livings()[0]))
+        self.species_t=np.append(self.species_t,len(self.Livings()[0]))
 
             
             
@@ -170,24 +169,58 @@ class DCM:
         for day in range(T):
             
             if(len(self.Livings()[0])!=self.S):
+                
                 #MIGRATION SECTION
                 t_step+=1
                 if(t_step==dt):
                     self.migration(I)
                     t_step=0
-                    
+            #Lotka-Volterra computation      
             Ns=odeint(self.f,self.N[self.Livings()],time)[1]
             self.N[self.Livings()]=Ns
             #self.population_t=np.append(self.population_t,[self.N],axis=0)
 
             self.Extinction()
             self.population_t=np.append(self.population_t,[self.N],axis=0)
-            self.N_species=np.append(self.N_species,len(self.Livings()[0]))
+            self.species_t=np.append(self.species_t,len(self.Livings()[0]))
             
             print("\r Day = ",day,end='',flush=True)
             
             
+    def food_web(self,labels=False):
+        #Creating an adjacency matrix with only Living species values
+        gamma_adj=np.copy(self.gamma)
+        gamma_adj=gamma_adj[self.Livings()]
+        gamma_adj=gamma_adj[:,self.Livings()]
+        
+        #make the adjacency matrix square
+        dim=np.shape(gamma_adj)[0]
+        gamma_adj=np.reshape(gamma_adj,(dim,dim))
+        
+        #remove all the negative values
+        gamma_adj[gamma_adj<0]=0
+        self.G=nx.from_numpy_matrix(gamma_adj,create_using=nx.DiGraph)
+        d = dict(self.G.out_degree)
+        low, *_, high = sorted(d.values())
+        norm = mpl.colors.Normalize(vmin=low, vmax=high, clip=True)
+        mapper = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.coolwarm)
+        nx.draw_shell(self.G, 
+        nodelist=d,
+        node_size=500,
+        node_color=[mapper.to_rgba(i) 
+                    for i in d.values()], 
+        with_labels=True,
+        font_color='white')
+        
+        if(labels):
+            #Associate each living species ID to the node labels.
+            labels={}
+            for i in range(len(self.Livings()[0])):
+                labels[i]=self.Livings()[0][i]
+            print(labels)
             
+    
+        return plt.show()
         
     
     
