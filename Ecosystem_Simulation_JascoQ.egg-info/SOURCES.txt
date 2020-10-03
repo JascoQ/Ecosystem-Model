@@ -1,0 +1,6 @@
+README.md
+setup.py
+Ecosystem_Simulation_JascoQ.egg-info/PKG-INFO
+Ecosystem_Simulation_JascoQ.egg-info/SOURCES.txt
+Ecosystem_Simulation_JascoQ.egg-info/dependency_links.txt
+Ecosystem_Simulation_JascoQ.egg-info/top_level.txt

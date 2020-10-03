@@ -10,6 +10,9 @@ import os
 from setuptools import setup
 import re, pathlib
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
@@ -23,23 +26,26 @@ def get_requirements():
     return reqs
 
 
-project_name = "Ecosystem_model"
+project_name = "Ecosystem_Simulation-JascoQ"
 
 setup(
     name = project_name,
-    version = get_property('__version__', project_name),
+    version = "0.0.1",
     author = "Giovanni Marangi",
     author_email = "giovanni.marangi@studio.unibo.it",
     description = ("Two different approaches to simulate an ecosystem"),
-    license = "Unlicense",
+    #license = "Unlicense",
     keywords = "Ecosystem, foodwebs, migration flux",
     url = "https://github.com/JascoQ/Ecosystem-Model",
-    packages=['IBM,DCM'],
-    install_requires= get_requirements(),
-    long_description=read('README.md'),
+    #packages=['IBM,DCM'],
+    #packages=setuptools.find_packages(),
+    #install_requires= get_requirements(),
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     classifiers=[
-        "Development Status :: 1.0",
-        "Topic :: Ecosystem",
-        "License :: Public Domain",
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
     ],
+    python_requires='>=3.6'
 )
