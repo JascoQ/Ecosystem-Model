@@ -37,9 +37,9 @@ setup(
     #license = "Unlicense",
     keywords = "Ecosystem, foodwebs, migration flux",
     url = "https://github.com/JascoQ/Ecosystem-Model",
-    #packages=['IBM,DCM'],
+    packages=['IBM,DCM'],
     #packages=setuptools.find_packages(),
-    #install_requires= get_requirements(),
+    install_requires= get_requirements(),
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
