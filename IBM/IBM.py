@@ -26,6 +26,7 @@ class IBM:
         
         self.Area=area
         self.method=method
+        
         if(method=="RM"):
             animal_species=int(input("Input how many animal species : "))
             basal_species=int(input("Input how many basal species : "))
@@ -36,6 +37,7 @@ class IBM:
             self.all_species=list(range(animal_species+basal_species))
             self.Basals=np.setdiff1d(self.all_species,self.Predators)
             self.C=np.zeros((basal_species+animal_species,basal_species+animal_species))
+            
             self.build_interactions()
         
         if(method=="CM"):
@@ -43,7 +45,33 @@ class IBM:
             self.all_species=list(range(num_species))
             self.C=np.zeros((num_species,num_species))
             self.build_interactions()
-
+            
+        #add two methods to allows default TEST models without console interaction
+        if(method=="RM_test"):
+            animal_species=50
+            basal_species=5
+            
+            self.Predators=list(range(basal_species,basal_species+animal_species))
+            self.all_species=list(range(animal_species+basal_species))
+            self.Basals=np.setdiff1d(self.all_species,self.Predators)
+            self.C=np.zeros((basal_species+animal_species,basal_species+animal_species))
+            
+            self.method="RM"
+            self.build_interactions()
+            
+        if(method=="CM_test"):
+            num_species=50
+            self.all_species=list(range(num_species))
+            self.C=np.zeros((num_species,num_species))
+            self.method="CM"
+            self.build_interactions()
+        
+        allowed_methods=["RM","CM","RM_test","CM_test"]
+        if (method not in allowed_methods):
+            print("Wrong input for method arg. Allowed inputs are strings:",allowed_methods)
+            
+            
+            
         #creo dataframe vuoto in cui ogni riga conterrò
         #l'energia e la specie dell'i-esimo individuo
         #Individuals[individual_energy][species][ID]
@@ -106,8 +134,7 @@ class IBM:
                     self.Basals=np.append(self.Basals,i)
                 i+=1
             self.Predators=np.setdiff1d(self.all_species,self.Basals)
-        else:
-            print("Wrong input for method arg. Allowed inputs are strings: RM and CM")
+
             
     def get_params(self):
         print("Area=",self.Area,",Method:",self.method)
@@ -124,14 +151,18 @@ class IBM:
             count=np.shape(np.where(self.Individuals[:,1]<self.Predators[0]))[1]
         return count
     
-    
+
+
     def species_alive(self):
         return np.unique(self.Individuals[:,1])
     
     def current_situation(self):
         print("Population number :",len(self.Individuals))
         print("Different species alive :",len(self.species_alive()))
-        print("Animals/Basals number= ",self.Population_t[-1][0],"/",self.Population_t[-1][1])
+        if (len(self.Population_t)>0):
+            print("Animals/Basals number= ",self.Population_t[-1][0],"/",self.Population_t[-1][1])
+        else:
+            print("Ecosystem at time=0 is empty; first call Evolve function")
         print("Number of births: ",self.N_births)
         print("Number of deaths: ",self.N_deaths)
         print("Time passed: ",len(self.Population_t))
