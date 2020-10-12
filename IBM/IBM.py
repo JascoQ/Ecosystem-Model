@@ -167,14 +167,20 @@ class IBM:
         print("Number of deaths: ",self.N_deaths)
         print("Time passed: ",len(self.Population_t))
         
-    def Add_individual(self,Species=False,energy=b):
-        if (Species):
-            self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
+    def Add_individual(self,Species=-1,energy=b):
             
-        else:
+        if(Species==-1):
             Species=np.random.choice(self.all_species,1)
             self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
-        self.last_ID+=1
+            self.last_ID+=1
+        elif( (np.shape(Species)==()) and (Species in self.all_species) ):
+            self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
+            self.last_ID+=1
+        else:
+            print("Input args error: insert a valid species number")
+
+            
+        
             
     def get_predators(self,species):
         return np.where(self.C[:,species]!=0)
@@ -285,8 +291,14 @@ class IBM:
         return individuals_index.reshape(len(individuals_index)//2,2)
     
     def Get_individual(self,ID):
-        idx=int(np.reshape(np.where(self.Individuals[:,2]==ID),()))
-        return self.Individuals[idx]
+        if (ID not in self.Individuals[:,2]):
+            print("ID specified does not exist")
+            return False
+        elif(ID==0):
+            return self.Individuals[0]
+        else:
+            idx=int(np.reshape(np.where(self.Individuals[:,2]==ID),()))
+            return self.Individuals[idx]
     
     def Interaction_dynamics(self,spec_1,spec_2,is_there_space=True):
         
@@ -329,7 +341,7 @@ class IBM:
     #Es: I=2, dt=1 --> ogni step arrivano 2 specie
     #Es2: I=1, dt=3 --> ogni 3 step arriva 1 specie
     #verbose : mostra in tempo reale l'evoluzione del sistema
-    def Evolve(self,Time,I,dt=1,verbose=False,show_results=False):
+    def Evolve(self,Time,I,dt=1,verbose="days",show_results=False):
         t_step=0
         
         if(len(self.Individuals)==0):
@@ -341,8 +353,7 @@ class IBM:
             #FLUSSO MIGRAZIONE 
             if(t_step==dt):
                 for migrants in range(I):
-                    species=np.random.choice(self.all_species,1)
-                    self.Add_individual(Species=species,energy=delta)
+                    self.Add_individual(Species=-1,energy=delta)
                 t_step=0
 
             #estraggo len(Individuals)//2 coppie di individui
@@ -370,13 +381,13 @@ class IBM:
             daily_basals=self.Basals_counts()
             self.Population_t=np.append(self.Population_t,[[len(self.Individuals)-daily_basals,daily_basals,N_species]],axis=0)
 
-            if(verbose):
+            if(verbose=="full"):
                 print("-------- Day = ",t,"-------------")
                 print("Daily Births = ",daily_births)
                 print("Daily Deaths = ",daily_deaths)
                 print("Animals/Basals number= ",self.Population_t[-1][0],"/",self.Population_t[-1][1])
                 print("There are ",N_species," different species alive")
-            else:
+            elif(verbose=="days"):
                 print("\rDay = ",t,"", end= '',flush=True)
         if(show_results):
             self.plot_pop()
