@@ -5,6 +5,10 @@ Created on Mon Jun 22 16:06:27 2020
 
 @author: glatt
 """
+
+#todO
+#SE PARTO CON 0 ANIMALS, MI DA ERRORE PERCHÈ CERCO IN SELF.PREDATORS[0] CHE È VUOTO
+
 import random
 import numpy as np
 import matplotlib as mpl
@@ -142,13 +146,17 @@ class IBM:
         print("l=",l,",dissipation=",d,",basals growth=",b)
     
     def Basals_counts(self):
-        if (self.method=="CM"):
-            count=0
-            for species in self.Individuals[:,1]:
-                if (species in self.Basals):
-                    count+=1
-        elif(self.method=="RM"):
-            count=np.shape(np.where(self.Individuals[:,1]<self.Predators[0]))[1]
+        #Esegui solo se vi è almeno una specie animale
+        if(len(self.Basals)!=len(self.all_species)):
+            if (self.method=="CM"):
+                count=0
+                for species in self.Individuals[:,1]:
+                    if (species in self.Basals):
+                        count+=1
+            elif(self.method=="RM"):
+                count=np.shape(np.where(self.Individuals[:,1]<self.Predators[0]))[1]
+        else:
+            count=len(self.Individuals)
         return count
     
 
@@ -173,7 +181,7 @@ class IBM:
             Species=np.random.choice(self.all_species,1)
             self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
             self.last_ID+=1
-        elif( (np.shape(Species)==()) and (Species in self.all_species) ):
+        elif( (np.shape(Species)==()) or (Species in self.all_species) ):
             self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
             self.last_ID+=1
         else:
@@ -247,20 +255,31 @@ class IBM:
         plt.legend()
         return plt.show()  
     
-    def food_web(self):
+    def food_web(self,draw=False):
         self.G=nx.from_numpy_matrix(self.C,create_using=nx.DiGraph)
-        d = dict(self.G.out_degree)
-        low, *_, high = sorted(d.values())
-        norm = mpl.colors.Normalize(vmin=low, vmax=high, clip=True)
-        mapper = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.coolwarm)
-        nx.draw_shell(self.G, 
-        nodelist=d,
-        node_size=500,
-        node_color=[mapper.to_rgba(i) 
-                    for i in d.values()], 
-        with_labels=True,
-        font_color='white')
-        return plt.show()
+        if (draw):
+        #The out_degree value for a species represent its number of preys
+            d = dict(self.G.out_degree)
+            low, *_, high = sorted(d.values())
+            norm = mpl.colors.Normalize(vmin=low, vmax=high, clip=True)
+            mapper = mpl.cm.ScalarMappable(norm=norm, cmap=mpl.cm.coolwarm)
+            nx.draw_shell(self.G, 
+                      nodelist=d,
+            node_size=500,
+            node_color=[mapper.to_rgba(i) 
+                        for i in d.values()], 
+            with_labels=True,
+            font_color='white')
+            plt.show()
+        
+        out_degree=self.G.out_degree
+        in_degree=self.G.in_degree
+        n_predators=len(self.Predators)
+        print("Average predators for species:",np.average(in_degree,0)[1])
+        print("Average preys for predator :",(np.sum(out_degree,0)[1])/n_predators)
+
+        
+        
 
         
     
