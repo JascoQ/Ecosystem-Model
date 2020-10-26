@@ -6,10 +6,28 @@ Created on Sun Oct 18 20:33:32 2020
 @author: glatt
 """
 
+
+
 from DCM.DCM import DCM
 import numpy as np
 
+
+
 DCM_test_results=[]
+
+
+
+#Run New_species function
+Eco_system_test=DCM()
+Eco_system_test.New_species()
+species=Eco_system_test.Livings()[0][1]
+
+if (Eco_system_test.N[species]!=0):
+    DCM_test_results.append(True)
+else:
+    DCM_test_results.append(False)
+############################################################################################
+    
 #Build an only-Basal resources ecosystem to test the Lotka-Volterra equation
 Eco_system_test=DCM()
 start_biomass=Eco_system_test.N[0]
@@ -20,7 +38,8 @@ if (start_biomass<Eco_system_test.N[0]):
     DCM_test_results.append(True)
 else:
     DCM_test_results.append(False)
-    
+############################################################################################
+
 
 #Run a simulation with both Resources and Migration flux and check if population grows
 Eco_system_test=DCM()
@@ -29,10 +48,24 @@ if (len(Eco_system_test.Livings()[0])>1):
     DCM_test_results.append(True)
 else:
     DCM_test_results.append(False)
+############################################################################################
 
 
+#Testing the extinction function inside an Evolve session
+Eco_system_test=DCM()
+Eco_system_test.New_species()
+species=Eco_system_test.Livings()[0][1]
+#Setting its energy to minimum
+Eco_system_test.N[species]=0.5
+Eco_system_test.Evolve(1,0)
+if(Eco_system_test.N[species]==0):
+    DCM_test_results.append(True)
+else:
+    DCM_test_results.append(False)
+############################################################################################
 
 
+#Print out test results 
 DCM_test_results=np.array(DCM_test_results)
 err_idx=DCM_test_results[DCM_test_results==False]
 if(err_idx.size==0):

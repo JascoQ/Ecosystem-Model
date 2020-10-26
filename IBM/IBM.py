@@ -181,7 +181,8 @@ class IBM:
             Species=np.random.choice(self.all_species,1)
             self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
             self.last_ID+=1
-        elif( (np.shape(Species)==()) or (Species in self.all_species) ):
+        elif( (np.shape(Species)==()) or (Species in self.all_species) or np.shape(Species)==(1,)):
+            Species=np.reshape(np.array([Species]),(1,))
             self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
             self.last_ID+=1
         else:
@@ -255,7 +256,7 @@ class IBM:
         plt.legend()
         return plt.show()  
     
-    def food_web(self,draw=False):
+    def food_web(self,draw=True):
         self.G=nx.from_numpy_matrix(self.C,create_using=nx.DiGraph)
         if (draw):
         #The out_degree value for a species represent its number of preys
@@ -284,19 +285,20 @@ class IBM:
         
     
     def Individuals_per_species(self):
-        species=self.species_alive()
         counts=[]
-        for s in species:
-            counts=np.append(counts,len(self.Individuals[self.Individuals[:,1]==s]))
+        for spec in self.Individuals[:,1]:
+            counts=np.append(counts,spec[0])
             
         #plt.plot(species,counts)
-        plt.hist(self.Individuals[:,1])
+        plt.hist(counts,bins=len(self.all_species),alpha=0.6)
+        
         if(self.method=="RM"):
-            plt.axvline(x=self.Basals[-1],linestyle='--',label="Basals|Animals")
+            plt.axvline(x=self.Basals[-1],linestyle='--',label="Basals|Animals",color='r')
+            
+        plt.legend()
         plt.xlabel("Species")
         plt.ylabel("Counts")
-        #returna la lista che plotti pure già che stai zì
-        #return counts
+        return counts
         
 
 
@@ -400,7 +402,7 @@ class IBM:
             daily_basals=self.Basals_counts()
             self.Population_t=np.append(self.Population_t,[[len(self.Individuals)-daily_basals,daily_basals,N_species]],axis=0)
 
-            if(verbose=="full"):
+            if(verbose=="full" or verbose==True):
                 print("-------- Day = ",t,"-------------")
                 print("Daily Births = ",daily_births)
                 print("Daily Deaths = ",daily_deaths)

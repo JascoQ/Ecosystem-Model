@@ -97,7 +97,7 @@ class DCM:
             
         
     def get_interaction(self,ID):
-        
+        print("Preys idx/Predators idx")
         preys_idx=np.where(self.gamma[ID]>0)
         predators_idx=np.where(self.gamma[ID]<0)
                         
