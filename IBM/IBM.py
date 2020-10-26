@@ -6,9 +6,6 @@ Created on Mon Jun 22 16:06:27 2020
 @author: glatt
 """
 
-#todO
-#SE PARTO CON 0 ANIMALS, MI DA ERRORE PERCHÈ CERCO IN SELF.PREDATORS[0] CHE È VUOTO
-
 import random
 import numpy as np
 import matplotlib as mpl
@@ -34,7 +31,7 @@ class IBM:
         if(method=="RM"):
             animal_species=int(input("Input how many animal species : "))
             basal_species=int(input("Input how many basal species : "))
-            #inizializzo iun array con le specie dei predatori a partire dalle specie animali
+            #inizializzo un array con le specie dei predatori a partire dalle specie animali
             self.Predators=list(range(basal_species,basal_species+animal_species))
         
             #inizializzo allo stesso modo una lista di tutte le specie possibili prede
@@ -256,7 +253,7 @@ class IBM:
         plt.legend()
         return plt.show()  
     
-    def food_web(self,draw=True):
+    def food_web(self,draw=False):
         self.G=nx.from_numpy_matrix(self.C,create_using=nx.DiGraph)
         if (draw):
         #The out_degree value for a species represent its number of preys
@@ -278,9 +275,8 @@ class IBM:
         n_predators=len(self.Predators)
         print("Average predators for species:",np.average(in_degree,0)[1])
         print("Average preys for predator :",(np.sum(out_degree,0)[1])/n_predators)
-
-        
-        
+        print("Number of edges in the foodweb: ", nx.number_of_edges(self.G))
+                
 
         
     
