@@ -78,7 +78,8 @@ class DCM:
     
     def livings(self,pop=None):
         '''Returns an array filled with all the species ID which have a biomass value greater than zero.'''
-        if (pop==None):
+        none_type=type(None)
+        if (type(pop)==none_type):
             living_list=np.where(self.N!=0)
         else:
             living_list=np.where(pop!=0)
