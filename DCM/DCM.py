@@ -71,7 +71,7 @@ class DCM:
         print("Ecosystem paramters has been modified.")
         self.get_params()
     
-    def set_defaul(self):
+    def set_default(self):
         '''set all ecosystem parameters with prefixed values'''
         self.set_params(self.default_params)
     
@@ -84,10 +84,10 @@ class DCM:
             living_list=np.where(pop!=0)
         return living_list
     
-    def animals(self):
+    def animals(self,pop==None):
         '''Returns an array filled with all the species ID which are alive but without counting the basal species.'''
         
-        being_list=np.where(self.N!=0)
+        being_list=self.livings(pop)
         being_list=np.setdiff1d(being_list,0)
         return being_list
             
@@ -138,7 +138,7 @@ class DCM:
         preys_idx=np.where(self.gamma[ID]>0)
         predators_idx=np.where(self.gamma[ID]<0)
                         
-        return preys_idx,predators_idx
+        return [preys_idx,predators_idx]
         
     
     def extinction(self):
