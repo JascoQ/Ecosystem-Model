@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 #COSTANTS
-E=200               #Max value for interactions matrix
+max_E=200           #Max value for interactions matrix
 l=8                 #Average preys for predator
 b=5                 #Energy gain for basal 
 d=2.5               #Energy dissipation for timestep
@@ -27,10 +27,19 @@ class IBM:
         
         self.Area=area
         self.method=method
+        self.max_E=200
+        self.l=8
+        self.b=5
+        self.d=2.5
+        self.delta=20
+        self.P_death=0.002
+        self.E_rep=200
+        
+        self.default_par=[self.Area,max_E,l,b,d,delta,P_death,E_rep]
         
         if(method=="RM"):
-            animal_species=int(input("Input how many animal species : "))
-            basal_species=int(input("Input how many basal species : "))
+            animal_species=Animal_species
+            basal_species=Basal_species
             #inizializzo un array con le specie dei predatori a partire dalle specie animali
             self.Predators=list(range(basal_species,basal_species+animal_species))
         
@@ -87,6 +96,7 @@ class IBM:
         
     #allowed method : "RM" and "CM"
     def build_interactions(self):
+        '''It builds an interaction matrix for all the species, depending on which methods has been chosen'''
         if (self.method=="RM"):
             
             for pred in self.Predators:
@@ -98,21 +108,21 @@ class IBM:
                 preys=np.setdiff1d(preys,self.get_predators(pred))
                         
                 #controllo se il num. max di prede l è minore delle prede disponibili
-                if (len(preys)>=l):
+                if (len(preys)>=self.l):
                     
                     #estraggo l prede casualmente e inizializzo i coefficienti di interazione predatore-preda     
-                    for idx in random.sample(list(preys),k=l):
-                        self.C[pred][idx]=np.random.uniform(0,E)
+                    for idx in random.sample(list(preys),k=self.l):
+                        self.C[pred][idx]=np.random.uniform(0,self.max_E)
                         
                 else:
                     #ridefinisco il max numero di prede
                     max_n=len(preys)
                     for idx in random.sample(list(preys),max_n):
-                        self.C[pred][idx]=np.random.uniform(0,E)
+                        self.C[pred][idx]=np.random.uniform(0,self.max_E)
                     
         elif(self.method=="CM"):
             #defining prey probability as costant/num. of species
-            prob=l/len(self.all_species)
+            prob=self.l/len(self.all_species)
             
             for predator in self.all_species:
                 
@@ -124,7 +134,7 @@ class IBM:
                 preys=np.random.choice(self.all_species[:predator],size=n_preys,replace=False)
                 
                 for prey in preys:
-                    self.C[predator][prey]=np.random.uniform(0,E)
+                    self.C[predator][prey]=np.random.uniform(0,self.max_E)
             #Categorizza le basals species e le animals affinchè il resto del codice sia coerente
             self.Basals=[]
             i=0
@@ -138,11 +148,36 @@ class IBM:
 
             
     def get_params(self):
+        '''It prints and return all the ecosystem parameters'''
+        
         print("Area=",self.Area,",Method:",self.method)
-        print("E_rep=",E_rep,",Death probability=",P_death,",Max E=",E,",delta=",delta)
-        print("l=",l,",dissipation=",d,",basals growth=",b)
+        print("E_rep=",self.E_rep,",Death probability=",self.P_death,",Max E=",self.max_E,",delta=",self.delta)
+        print("l=",self.l,",dissipation=",self.d,",basals growth=",self.b)
+        return self.Area,self.E_rep,self.P_death,self.E_max,self.delta,self.l,self.d,self.b
     
-    def Basals_counts(self):
+    def set_params(self,par_arr):
+        '''The given argument array modifies all the ecosystem parameters in this order: Area, E_rep, P_death, E_max, delta, l, d, b'''
+        
+        self.Area=par_arr[0]
+        self.E_rep=par_arr[1]
+        self.P_death=par_arr[2]
+        self.E_max=par_arr[3]
+        self.delta=par_arr[4]
+        self.l=par_arr[5]
+        self.d=par_arr[6]
+        self.b=par_arr[7]
+        print("Parameters has been succesfully changed")
+        print("New parameters are:")
+        self.get_params()
+        
+    
+    def set_default(self):
+        '''sets ecosystem parameters with prefixed default values'''
+        
+        self.set_params(self.default_par)
+        
+    def basals_counts(self):
+        '''Returns the number of living Basals individuals'''
         #Esegui solo se vi è almeno una specie animale
         if(len(self.Basals)!=len(self.all_species)):
             if (self.method=="CM"):
@@ -159,9 +194,12 @@ class IBM:
 
 
     def species_alive(self):
+        '''Return an array filled with all the unique species ID living in the ecosystem'''
         return np.unique(self.Individuals[:,1])
     
     def current_situation(self):
+        '''It prints out all the information about the evolution and the current status of the ecosystem'''
+        
         print("Population number :",len(self.Individuals))
         print("Different species alive :",len(self.species_alive()))
         if (len(self.Population_t)>0):
@@ -172,8 +210,11 @@ class IBM:
         print("Number of deaths: ",self.N_deaths)
         print("Time passed: ",len(self.Population_t))
         
-    def Add_individual(self,Species=-1,energy=b):
-            
+    def add_individual(self,Species=-1,energy=b):
+        '''If arg Species=-1, then the species added to the ecosystem is randomly extracted from the pool of allowed species. If Species = some_species_ID, then it adds an individual belonging to that species with the desired energy'''
+        
+        if (energy==b):
+            energy=self.b 
         if(Species==-1):
             Species=np.random.choice(self.all_species,1)
             self.Individuals=np.append(self.Individuals,[[energy,Species,self.last_ID]],axis=0)
@@ -189,14 +230,19 @@ class IBM:
         
             
     def get_predators(self,species):
+        '''It returns an array filled with all the predators of a certain species'''
         return np.where(self.C[:,species]!=0)
     def get_preys(self,species):
+        '''It returns an array filled with all the preys of a certain species'''
+
         return np.where(self.C[species]!=0)
         
-    def Deaths(self):
+    def deaths(self):
+        '''It computes a random die chance for each living individual, then check if any individuals has energy below a certain threshold and if yes, set that individual as died'''
+        
         #estraggo un numero per ogni specie
         chances=np.random.uniform(0,1,size=len(self.Individuals))
-        n_deaths=len(chances[chances<=P_death])
+        n_deaths=len(chances[chances<=self.P_death])
         daily_deaths=n_deaths+len(self.Individuals[self.Individuals[:,0]<=0])
         self.N_deaths+=daily_deaths
         death_ID=np.random.choice(self.Individuals[:,2],n_deaths)
@@ -211,24 +257,25 @@ class IBM:
         
         
     
-    def Births(self):
-        pregnant_index=np.where(self.Individuals[:,0]>E_rep)
+    def births(self):
+        '''It checks if any individual has an energy above a certain reproduction threshold and when yes, it adds to the ecosystem as many new individual as the pregnant individuals'''
+        pregnant_index=np.where(self.Individuals[:,0]>self.E_rep)
         pregnant_index=np.reshape(pregnant_index,(len(pregnant_index[0]),))
         
         aborts=0
         #daily_space finchè è >0 garantisce che ci sia spazio available for basals reproduction
-        #daily_space=self.Area-self.Basals_counts()
+        #daily_space=self.Area-self.basals_counts()
         
         for i in pregnant_index:
             
             #if (self.Individuals[i][1] in self.Basals and not daily_space):
-            if (self.Individuals[i][1] in self.Basals and self.Basals_counts()>=self.Area):
+            if (self.Individuals[i][1] in self.Basals and self.basals_counts()>=self.Area):
                 aborts+=1
                 
             else:
                 #print("Species",self.Individuals[i][1],"is reproducing!")
-                self.Individuals[i][0]-=delta
-                self.Add_individual(Species=self.Individuals[i][1],energy=delta)
+                self.Individuals[i][0]-=self.delta
+                self.add_individual(Species=self.Individuals[i][1],energy=self.delta)
                 #if (self.Individuals[i][1] in self.Basals):
                     #daily_space-=1
                 
@@ -238,6 +285,8 @@ class IBM:
         return (len(pregnant_index)-aborts)
             
     def plot_pop(self,Animals=True,Basals=True,Species=True,Area=False):
+        '''Plots the counts of Individuals through time. Arguments can be changed in order to show more curves to the plot.'''
+        
         plt.xlabel("Time")
         plt.ylabel("Counts")
         
@@ -254,6 +303,9 @@ class IBM:
         return plt.show()  
     
     def food_web(self,draw=False):
+        '''It prints, when draw=True, a graphic visualization of the food web related to the ecosystem interactions. Also it prints a set of network measurements about the food web.'''
+        
+        
         self.G=nx.from_numpy_matrix(self.C,create_using=nx.DiGraph)
         if (draw):
         #The out_degree value for a species represent its number of preys
@@ -280,7 +332,9 @@ class IBM:
 
         
     
-    def Individuals_per_species(self):
+    def individuals_per_species(self):
+        '''It plots and returns an array filled with the individual counts per each species'''
+        
         counts=[]
         for spec in self.Individuals[:,1]:
             counts=np.append(counts,spec[0])
@@ -298,7 +352,9 @@ class IBM:
         
 
 
-    def Create_Pairs(self):
+    def create_pairs(self):
+        '''Randomly pairs each living individual with another. If number of individuals is odd, then one individual is left unpaired'''
+        
         individuals_index=np.copy(self.Individuals[:,2])
         individuals_index=np.random.choice(individuals_index,len(individuals_index),replace=False)
         
@@ -307,7 +363,9 @@ class IBM:
                     
         return individuals_index.reshape(len(individuals_index)//2,2)
     
-    def Get_individual(self,ID):
+    def get_individual(self,ID):
+        '''Returns the info array (Energy, Species, ID)) about a specified individual.'''
+                
         if (ID not in self.Individuals[:,2]):
             print("ID specified does not exist")
             return False
@@ -317,7 +375,8 @@ class IBM:
             idx=int(np.reshape(np.where(self.Individuals[:,2]==ID),()))
             return self.Individuals[idx]
     
-    def Interaction_dynamics(self,spec_1,spec_2,is_there_space=True):
+    def interaction_dynamics(self,spec_1,spec_2,is_there_space=True):
+        '''It computes the interaction dynamics between two individuals given as args.'''
         
         #CASES:
                     
@@ -330,10 +389,10 @@ class IBM:
         #Specie1 è predatore di Specie2
         if(self.C[int(spec_1[1])][int(spec_2[1])]!=0 and self.C[int(spec_2[1])][int(spec_1[1])]==0):
             #CONTROLLO AFFINCHÈ NESSUN E(i)>E_rep+E
-            if(spec_2[0]/E_rep>=1):
-                spec_1[0]+=self.C[int(spec_1[1])][int(spec_2[1])]-d
+            if(spec_2[0]/self.E_rep>=1):
+                spec_1[0]+=self.C[int(spec_1[1])][int(spec_2[1])]-self.d
             else:
-                spec_1[0]+=(self.C[int(spec_1[1])][int(spec_2[1])]*spec_2[0]/E_rep)-d
+                spec_1[0]+=(self.C[int(spec_1[1])][int(spec_2[1])]*spec_2[0]/self.E_rep)-self.d
 
             spec_2[0]=0
                         
@@ -341,16 +400,16 @@ class IBM:
         if(self.C[int(spec_2[1])][int(spec_1[1])]!=0 and self.C[int(spec_1[1])][int(spec_2[1])]==0):
             #CONTROLLO AFFINCHÈ NESSUN E(i)>E_rep+E
             if(spec_1[0]/E_rep<1):
-                spec_2[0]+=(self.C[int(spec_2[1])][int(spec_1[1])]*spec_1[0]/E_rep)-d
+                spec_2[0]+=(self.C[int(spec_2[1])][int(spec_1[1])]*spec_1[0]/self.E_rep)-self.d
             else:
-                spec_2[0]+=self.C[int(spec_2[1])][int(spec_1[1])]-d
+                spec_2[0]+=self.C[int(spec_2[1])][int(spec_1[1])]-self.d
             spec_1[0]=0
             
         #Nel caso nessuna delle condizioni precedenti sia soddisfatta
         #la coppia è formata da animali che non si predano che dissipano energia
         else:
-            spec_1[0]-=d
-            spec_2[0]-=d
+            spec_1[0]-=self.d
+            spec_2[0]-=self.d
         
           
     #Time : tempo di evoluzione del sistema
@@ -358,44 +417,51 @@ class IBM:
     #Es: I=2, dt=1 --> ogni step arrivano 2 specie
     #Es2: I=1, dt=3 --> ogni 3 step arriva 1 specie
     #verbose : mostra in tempo reale l'evoluzione del sistema
-    def Evolve(self,Time,I,dt=1,verbose="days",show_results=False):
+    def evolve(self,Time,I,dt=1,verbose="days",show_results=False):
+        '''It evolves the system for a fixed number of timesteps (Time). Argument I represent the migration flux for dt.
+            Example: I=2, dt=1 --> each time step, two random individuals arrives to the ecosystem
+            Example 2: I=1, dt=3 --> each 3 time steps, 1 random individual arrives to the ecosystem
+            Argument verbose is set 'days' as default, so it will print the timesteps count.
+            When verbose='full' or True, then it will prints all the information about the ecosystem for each timestep.'''
+            
+            
         t_step=0
         
         if(len(self.Individuals)==0):
             #first born in the island
-            self.Add_individual(energy=delta)
+            self.add_individual(energy=self.delta)
             
         for t in range(Time):
             t_step+=1
             #FLUSSO MIGRAZIONE 
             if(t_step==dt):
                 for migrants in range(I):
-                    self.Add_individual(Species=-1,energy=delta)
+                    self.add_individual(Species=-1,energy=self.delta)
                 t_step=0
 
             #estraggo len(Individuals)//2 coppie di individui
             if(len(self.Individuals)>1):
                 
-                is_there_space=self.Basals_counts()<self.Area
-                pairs=self.Create_Pairs()
+                is_there_space=self.basals_counts()<self.Area
+                pairs=self.create_pairs()
                 for p in pairs:
-                    spec_1=self.Get_individual(p[0])
-                    spec_2=self.Get_individual(p[1])
+                    spec_1=self.get_individual(p[0])
+                    spec_2=self.get_individual(p[1])
                     
                     #Controlla tutte le possibili dinamiche preda predatore
                     #e aggiorna lo stato delle due specie accoppiate
-                    self.Interaction_dynamics(spec_1,spec_2,is_there_space) 
+                    self.interaction_dynamics(spec_1,spec_2,is_there_space) 
                       
-            #La funzione Deaths() rimuove gli individui con energia nulla
+            #La funzione deaths() rimuove gli individui con energia nulla
             #ed estrae randomicamente una percentuale di individui che muoiono
-            daily_deaths=self.Deaths()
+            daily_deaths=self.deaths()
 
-            #Births() si occupa di computare nuove nascite in caso di individui
+            #births() si occupa di computare nuove nascite in caso di individui
             #con energia>E_rep
-            daily_births=self.Births()
+            daily_births=self.births()
 
             N_species=len(self.species_alive())
-            daily_basals=self.Basals_counts()
+            daily_basals=self.basals_counts()
             self.Population_t=np.append(self.Population_t,[[len(self.Individuals)-daily_basals,daily_basals,N_species]],axis=0)
 
             if(verbose=="full" or verbose==True):
@@ -410,6 +476,84 @@ class IBM:
             self.plot_pop()
                 
                 
+            
+            
+class RM_IBM (IBM):
+    
+    def __init__(self,Area,Animal_species,Basal_species):
+        self.method="RM"
                 
+        self.Area=Area
+        self.max_E=200
+        self.l=8
+        self.b=5
+        self.d=2.5
+        self.delta=20
+        self.P_death=0.002
+        self.E_rep=200
+        
+        self.default_par=[self.Area,max_E,l,b,d,delta,P_death,E_rep]
+
+        animal_species=Animal_species
+        basal_species=Basal_species
+        #inizializzo un array con le specie dei predatori a partire dalle specie animali
+        self.Predators=list(range(basal_species,basal_species+animal_species))
+        #inizializzo allo stesso modo una lista di tutte le specie possibili prede
+        self.all_species=list(range(animal_species+basal_species))
+        self.Basals=np.setdiff1d(self.all_species,self.Predators)
+        self.C=np.zeros((basal_species+animal_species,basal_species+animal_species))
+            
+            
+        self.build_interactions()
+        
+        #creo dataframe vuoto in cui ogni riga conterrò
+        #l'energia e la specie dell'i-esimo individuo
+        #Individuals[individual_energy][species][ID]
+        self.Individuals=np.empty((0,3))
+        
+        self.last_ID=0
+        #creo dataframe contenente le info sull'evoluzione del sistema in funz. del tempo
+        self.Population_t=np.empty((0,3),dtype=int)
+        self.N_deaths=0
+        self.N_births=0
+        self.G=nx.DiGraph()
+        
+        
+class CM_IBM(IBM):
+    
+    def __init__(self,Area,overall_species):
+        self.method="CM"
+                
+        self.Area=Area
+        self.max_E=200
+        self.l=8
+        self.b=5
+        self.d=2.5
+        self.delta=20
+        self.P_death=0.002
+        self.E_rep=200
+        
+        self.default_par=[self.Area,max_E,l,b,d,delta,P_death,E_rep]
+        
+        num_species=overall_species
+        self.all_species=list(range(num_species))
+        self.C=np.zeros((num_species,num_species))
+        self.build_interactions()
+        
+        #creo dataframe vuoto in cui ogni riga conterrò
+        #l'energia e la specie dell'i-esimo individuo
+        #Individuals[individual_energy][species][ID]
+        self.Individuals=np.empty((0,3))
+        
+        self.last_ID=0
+        #creo dataframe contenente le info sull'evoluzione del sistema in funz. del tempo
+        self.Population_t=np.empty((0,3),dtype=int)
+        self.N_deaths=0
+        self.N_births=0
+        self.G=nx.DiGraph()
+        
+        
+    
+    
         
         

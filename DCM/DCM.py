@@ -16,11 +16,11 @@ import matplotlib as mpl
 
 class DCM:
     
-    def __init__(self):
-        self.S=2500
+    def __init__(self,species_number=2500):
+        self.S=species_number
         self.N=np.zeros(self.S)
+        
         self.l_max=8
-
         self.R=100
         self.gamma0=0.2
         self.gamma_max=5
@@ -28,6 +28,8 @@ class DCM:
         self.N_i=10
         self.alpha=0.5
         self.beta=0.1
+        
+        self.default_params=[self.l_max,self.R,self.gamma0,self.gamma_max,self.N_c,self.N_i,self.alpha,self.beta]
 
         
         self.gamma=np.zeros((self.S,self.S))
@@ -45,22 +47,55 @@ class DCM:
         self.species_t=np.append(self.species_t,1)
         self.G=nx.DiGraph()
 
+    
+    def get_params(self):
+        '''Prints and returns all the currents ecosystem parameters.'''
         
-    def Livings(self,pop=None):
+        print("l_max=",self.l_max,"R=",self.R,"gamma0=",self.gamma0,"gamma_max=",self.gamma_max,"N_c=",self.N_c,"N_i=",self.N_i,"alpha=",self.alpha,"beta=",self.beta)
+        
+        return [self.l_max,self.R,self.gamma0,self.gamma_max,self.N_c,self.N_i,self.alpha,self.beta]
+    
+    def set_params(self,params_arr):
+        '''The given argument array modifies all the ecosystem parameters in this order: l_max, R, gamma0, gamma_max, N_c, N_i, alpha, beta.'''
+
+        
+        self.l_max=params_arr[0]
+        self.R=params_arr[1]
+        self.gamma0=params_arr[2]
+        self.gamma_max=params_arr[3]
+        self.N_c=params_arr[4]
+        self.N_i=params_arr[5]
+        self.alpha=params_arr[6]
+        self.beta=params_arr[7]
+        
+        print("Ecosystem paramters has been modified.")
+        self.get_params()
+    
+    def set_defaul(self):
+        '''set all ecosystem parameters with prefixed values'''
+        self.set_params(self.default_params)
+    
+    
+    def livings(self,pop=None):
+        '''Returns an array filled with all the species ID which have a biomass value greater than zero.'''
         if (pop==None):
             living_list=np.where(self.N!=0)
         else:
             living_list=np.where(pop!=0)
         return living_list
     
-    def Animals(self):
+    def animals(self):
+        '''Returns an array filled with all the species ID which are alive but without counting the basal species.'''
+        
         being_list=np.where(self.N!=0)
         being_list=np.setdiff1d(being_list,0)
         return being_list
             
-    def New_species(self):
-        N_livings=len(self.Livings()[0])
-        daily_pool=np.setdiff1d(self.pool,self.Livings())
+    def new_species(self):
+        '''This function is called in the migration section and when allowed to execute it extracts a not yet aliving species from the pool and randomly assigns preys from the set of ecosystem livings species. The new species will have a fixed starting biomass.'''
+        
+        N_livings=len(self.livings()[0])
+        daily_pool=np.setdiff1d(self.pool,self.livings())
         
         #SE DAILY POOL NON È VUOTA, ALLORA PROCEDI ALL'ESTRAZIONE 
         if (np.any(daily_pool)):
@@ -74,7 +109,7 @@ class DCM:
                 else:
                     n_preys= np.random.randint(1,N_livings)
                 
-                preys=np.random.choice(self.Livings()[0],n_preys,replace=False)
+                preys=np.random.choice(self.livings()[0],n_preys,replace=False)
            
                 for prey in preys:
                    
@@ -84,7 +119,7 @@ class DCM:
             elif(N_livings>=self.l_max):
             
                 n_preys=np.random.randint(0,self.l_max)
-                preys=np.random.choice(self.Livings()[0],n_preys,replace=False)
+                preys=np.random.choice(self.livings()[0],n_preys,replace=False)
             
                 for prey in preys:
                 
@@ -97,6 +132,8 @@ class DCM:
             
         
     def get_interaction(self,ID):
+        '''Returns two array filled with the ID.respectively of preys species and predator species of the species ID given as first argument.'''
+        
         print("Preys idx/Predators idx")
         preys_idx=np.where(self.gamma[ID]>0)
         predators_idx=np.where(self.gamma[ID]<0)
@@ -104,7 +141,9 @@ class DCM:
         return preys_idx,predators_idx
         
     
-    def Extinction(self):
+    def extinction(self):
+        '''It checks if any species has biomass equal or below zero and when happens deletes all the relative species interactions from the gamma matrix.'''
+        
         ext_idx=np.where(self.N<self.N_c)
         for i in ext_idx:
             self.gamma[i]=0
@@ -112,13 +151,15 @@ class DCM:
             self.N[i]=0
         
     def f(self,N_sel,t):
+        '''This function encloses the symbolic computation of the Lotka-Volterra equation for each species. It builds an array in which each component describes the relative species Lotka-Volterra equation.'''
+        
         dNdt=[]
         N0=np.copy(self.N)
         #Se il primo degli esseri viventi sono le risorse esterne, allora computane l'ODE
-        if(self.Livings()[0][0]==0):
+        if(self.livings()[0][0]==0):
             basals_func=N_sel[0]*self.gamma0*self.R+N_sel[0]*np.dot(self.gamma[0],N0)
             dNdt=np.append(dNdt,basals_func)
-        for i in range(len(self.Animals())):
+        for i in range(len(self.animals())):
             func=-self.alpha*N_sel[i]-self.beta*N_sel[i]**2+N_sel[i]*np.dot(self.gamma[i],N0)
             
             dNdt=np.append(dNdt,func)
@@ -126,9 +167,12 @@ class DCM:
         return dNdt
     
     def plot_pop(self,Livings_only=True,species_t=True,yuplimit=False):
+        
+        '''It returns a plot of all species biomasses over time if Livings_only is set True. species_t when set True add to the plot a curve with the number of different species alive over time. yuplimit allows to adjust the y-axis upper limit useful when species biomasses have huge value differences. When left to False, it assumed the biggest biomass value found in the population array.'''
+        
         t=len(self.population_t)
         if (Livings_only):
-            for i in self.Livings()[0]:
+            for i in self.livings()[0]:
                 if(i==0):
                     plt.plot(range(t),self.population_t[:,i],linestyle='--',label="Resources")
                     plt.legend()
@@ -154,21 +198,25 @@ class DCM:
         plt.legend()
     
     def migration(self,I):
+        '''This function iterates the New_species() function over I value. It then update the Population array with the new species ID and starting biomass.'''
+        
         for migrant in range(I):
-            self.New_species()
+            self.new_species()
         self.population_t=np.append(self.population_t,[self.N],axis=0)
-        self.species_t=np.append(self.species_t,len(self.Livings()[0]))
+        self.species_t=np.append(self.species_t,len(self.livings()[0]))
 
             
             
 
-    def Evolve(self,T,I,dt=1):
+    def evolve(self,T,I,dt=1):
+        '''the Evolve function encloses all the other function calls in a proper sequence in order to simulate a random migration flux.'''
+        
         t_step=0
         time=np.linspace(0,0.01,2)
         
         for day in range(T):
             
-            if(len(self.Livings()[0])!=self.S):
+            if(len(self.livings()[0])!=self.S):
                 
                 #MIGRATION SECTION
                 t_step+=1
@@ -176,22 +224,24 @@ class DCM:
                     self.migration(I)
                     t_step=0
             #Lotka-Volterra computation      
-            Ns=odeint(self.f,self.N[self.Livings()],time)[1]
-            self.N[self.Livings()]=Ns
+            Ns=odeint(self.f,self.N[self.livings()],time)[1]
+            self.N[self.livings()]=Ns
             #self.population_t=np.append(self.population_t,[self.N],axis=0)
 
-            self.Extinction()
+            self.extinction()
             self.population_t=np.append(self.population_t,[self.N],axis=0)
-            self.species_t=np.append(self.species_t,len(self.Livings()[0]))
+            self.species_t=np.append(self.species_t,len(self.livings()[0]))
             
             print("\r Day = ",day,end='',flush=True)
             
             
     def food_web(self,labels=False):
+        '''returns the graphic visualization of the graph associated to the interaction matrix referred only to living species. Since the species ID for DCM are unsuitable for nodes label in the plot, they will be labelled starting from 0. When argument labels is True, a dictionary is printed with all the relationship between plot labels and species ID.'''
+        
         #Creating an adjacency matrix with only Living species values
         gamma_adj=np.copy(self.gamma)
-        gamma_adj=gamma_adj[self.Livings()]
-        gamma_adj=gamma_adj[:,self.Livings()]
+        gamma_adj=gamma_adj[self.livings()]
+        gamma_adj=gamma_adj[:,self.livings()]
         
         #make the adjacency matrix square
         dim=np.shape(gamma_adj)[0]
@@ -215,8 +265,8 @@ class DCM:
         if(labels):
             #Associate each living species ID to the node labels.
             labels={}
-            for i in range(len(self.Livings()[0])):
-                labels[i]=self.Livings()[0][i]
+            for i in range(len(self.livings()[0])):
+                labels[i]=self.livings()[0][i]
             print(labels)
             
     
