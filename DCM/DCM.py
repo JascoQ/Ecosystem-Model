@@ -84,7 +84,7 @@ class DCM:
             living_list=np.where(pop!=0)
         return living_list
     
-    def animals(self,pop==None):
+    def animals(self,pop=None):
         '''Returns an array filled with all the species ID which are alive but without counting the basal species.'''
         
         being_list=self.livings(pop)
