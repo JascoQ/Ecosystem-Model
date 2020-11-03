@@ -35,7 +35,8 @@ class IBM:
         self.P_death=0.002
         self.E_rep=200
         
-        self.default_par=[self.Area,max_E,l,b,d,delta,P_death,E_rep]
+        
+        self.default_par=[self.Area,E_rep,P_death,max_E,delta,l,d,b]
         
         if(method=="RM"):
             animal_species=Animal_species
@@ -153,7 +154,7 @@ class IBM:
         print("Area=",self.Area,",Method:",self.method)
         print("E_rep=",self.E_rep,",Death probability=",self.P_death,",Max E=",self.max_E,",delta=",self.delta)
         print("l=",self.l,",dissipation=",self.d,",basals growth=",self.b)
-        return self.Area,self.E_rep,self.P_death,self.max_E,self.delta,self.l,self.d,self.b
+        return [self.Area,self.E_rep,self.P_death,self.max_E,self.delta,self.l,self.d,self.b]
     
     def set_params(self,par_arr):
         '''The given argument array modifies all the ecosystem parameters in this order: Area, E_rep, P_death, max_E, delta, l, d, b'''
