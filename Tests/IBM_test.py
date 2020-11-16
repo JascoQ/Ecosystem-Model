@@ -6,20 +6,21 @@ Created on Sat Oct 10 18:54:04 2020
 @author: glatt
 """
 
-from IBM.IBM import IBM
+from IBM.IBM import*
 import numpy as np
 import pytest
 
 Area=1000
-RM_method="RM_test"
-CM_method="CM_test"
+Animal_species=40
+Basal_species=10
+Overall_species=50
 
 def test_build_interactions():
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     for rows in Eco_system_test.C[Eco_system_test.Basals[-1]+1:]:
         assert rows.any(),"Found a species with no interactions assigned: IBM.build_interaction() for RM method failed"
             
-    Eco_system_test=IBM(Area,CM_method)
+    Eco_system_test=CM_IBM(Area,Overall_species)
     for species in Eco_system_test.Predators:
         assert Eco_system_test.C[species].any()," Found a species with no interactions assigned: IBM.build_interaction() for CM method failed"
         
@@ -29,7 +30,7 @@ def test_build_interactions():
         
 def test_get_set_params_IBM():
     
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     assert Eco_system_test.get_params()==Eco_system_test.default_par, "IBM.get_params() method failed"
     test_params=range(1,9)
     Eco_system_test.set_params(test_params)
@@ -40,7 +41,7 @@ def test_get_set_params_IBM():
 #testing add_individual()
     
 def test_add_individual():
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     Eco_system_test.add_individual(Species=10,energy=100)
     
     assert Eco_system_test.species_alive().any()," IBM.add_individual() failed to add a new species to the ecosystem"
@@ -48,7 +49,7 @@ def test_add_individual():
     
     
 def test_deaths():
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     Eco_system_test.add_individual()
     
     
@@ -61,10 +62,12 @@ def test_deaths():
 #Testing basals_counts()
     
 def test_basals_counts():
-    methods=[RM_method,CM_method]
+    Eco_system_test1=RM_IBM(Area,Animal_species,Basal_species)
+    Eco_system_test2=CM_IBM(Area,Overall_species)
     
-    for method in methods:
-        Eco_system_test=IBM(Area,method)
+    Eco_system_tests=[Eco_system_test1,Eco_system_test2]
+    
+    for Eco_system_test in Eco_system_tests:
         spec1=Eco_system_test.Basals[1]
         spec2=Eco_system_test.Basals[2]
         
@@ -77,7 +80,7 @@ def test_basals_counts():
 #Testing births()  
         
 def test_births():
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     #testing for predator species
     spec=Eco_system_test.Predators[0]
     Eco_system_test.add_individual(Species=spec)
@@ -90,7 +93,7 @@ def test_births():
     
     #testing for basals species (Area limitation)
     Area_test=1
-    Eco_system_test=IBM(Area_test,RM_method)
+    Eco_system_test=RM_IBM(Area_test,Animal_species,Basal_species)
     spec=Eco_system_test.Basals[1]
     Eco_system_test.add_individual(Species=spec,energy=Eco_system_test.E_rep+1e-1)
     
@@ -102,7 +105,7 @@ def test_births():
 #testing create_pairs()
     
 def test_create_pairs():
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     #adding 7 individuals
     for new_species in range(0,7):
         Eco_system_test.add_individual()
@@ -118,7 +121,7 @@ def test_create_pairs():
 #testing get_individual(ID)
         
 def test_get_individual():
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     Eco_system_test.add_individual(Species=Eco_system_test.Predators[1],energy=50)
     new_species_ID=Eco_system_test.Individuals[0][2]
     
@@ -138,7 +141,7 @@ def test_interaction_dynamics():
         
 #A1 -> A2 ---- No interaction
     
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     A1=Eco_system_test.Basals[-1]+1
     
     predators_list=Eco_system_test.get_predators(A1)
@@ -164,7 +167,7 @@ def test_interaction_dynamics():
 ###################################################################
 #B1 -> B2 ----- no interaction
     
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     
     Eco_system_test.add_individual(Species=0)
     Eco_system_test.add_individual(Species=1)
@@ -178,7 +181,7 @@ def test_interaction_dynamics():
 ###################################################################    
 #A1 -> A2 ----- A1 predate A2
     
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     A1=Eco_system_test.Basals[-1]+1
     
     A1_preys=Eco_system_test.get_preys(A1)
@@ -198,7 +201,7 @@ def test_interaction_dynamics():
 ###################################################################    
 #A1->B1 ----- No interaction, Basals_energy>=E_rep
     
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     A1=Eco_system_test.Basals[-1]+1
     A1_preys=Eco_system_test.get_preys(A1)
     
@@ -217,8 +220,8 @@ def test_interaction_dynamics():
     
 ###################################################################    
 #A1->B1 ------- No interaction , Basal_energy>=E_rep but Basals_counts>=Area
-    
-    Eco_system_test=IBM(area=1,method=RM_method)
+    area_test=1
+    Eco_system_test=RM_IBM(area_test,Animal_species,Basal_species)
     A1=Eco_system_test.Basals[-1]+1
     A1_preys=Eco_system_test.get_preys(A1)
     
@@ -236,7 +239,7 @@ def test_interaction_dynamics():
 ###################################################################    
 #A1->B1 ----- A1 predate B1
     
-    Eco_system_test=IBM(Area,RM_method)
+    Eco_system_test=RM_IBM(Area,Animal_species,Basal_species)
     B1=1
     B1_predators=Eco_system_test.get_predators(1)
     A1=B1_predators[0][0]
