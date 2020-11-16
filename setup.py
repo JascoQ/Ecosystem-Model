@@ -30,7 +30,7 @@ project_name = "Ecosystem_Simulation-JascoQ"
 
 setup(
     name = project_name,
-    version = "0.0.9",
+    version = "1.0",
     author = "Giovanni Marangi",
     author_email = "giovanni.marangi@studio.unibo.it",
     description = ("Two different approaches to simulate an ecosystem"),
