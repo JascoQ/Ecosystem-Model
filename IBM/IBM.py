@@ -23,10 +23,9 @@ E_rep=200           #Energy needed for reproducing
 
 class IBM:
     
-    def __init__(self,area,method):
+    def __init__(self):
         
-        self.Area=area
-        self.method=method
+        
         self.max_E=200
         self.l=8
         self.b=5
@@ -36,52 +35,8 @@ class IBM:
         self.E_rep=200
         
         
-        self.default_par=[self.Area,E_rep,P_death,max_E,delta,l,d,b]
+        #self.default_par=[self.Area,E_rep,P_death,max_E,delta,l,d,b]
         
-        if(method=="RM"):
-            animal_species=Animal_species
-            basal_species=Basal_species
-            #inizializzo un array con le specie dei predatori a partire dalle specie animali
-            self.Predators=list(range(basal_species,basal_species+animal_species))
-        
-            #inizializzo allo stesso modo una lista di tutte le specie possibili prede
-            self.all_species=list(range(animal_species+basal_species))
-            self.Basals=np.setdiff1d(self.all_species,self.Predators)
-            self.C=np.zeros((basal_species+animal_species,basal_species+animal_species))
-            
-            self.build_interactions()
-        
-        if(method=="CM"):
-            num_species=int(input("Input how many overall species : "))
-            self.all_species=list(range(num_species))
-            self.C=np.zeros((num_species,num_species))
-            self.build_interactions()
-            
-        #add two methods to allows default TEST models without console interaction
-        if(method=="RM_test"):
-            animal_species=50
-            basal_species=5
-            
-            self.Predators=list(range(basal_species,basal_species+animal_species))
-            self.all_species=list(range(animal_species+basal_species))
-            self.Basals=np.setdiff1d(self.all_species,self.Predators)
-            self.C=np.zeros((basal_species+animal_species,basal_species+animal_species))
-            
-            self.method="RM"
-            self.build_interactions()
-            
-        if(method=="CM_test"):
-            num_species=50
-            self.all_species=list(range(num_species))
-            self.C=np.zeros((num_species,num_species))
-            self.method="CM"
-            self.build_interactions()
-        
-        allowed_methods=["RM","CM","RM_test","CM_test"]
-        if (method not in allowed_methods):
-            print("Wrong input for method arg. Allowed inputs are strings:",allowed_methods)
-            
-            
             
         #creo dataframe vuoto in cui ogni riga conterrò
         #l'energia e la specie dell'i-esimo individuo
@@ -95,6 +50,7 @@ class IBM:
         self.N_births=0
         self.G=nx.DiGraph()
         
+    """
     #allowed method : "RM" and "CM"
     def build_interactions(self):
         '''It builds an interaction matrix for all the species, depending on which methods has been chosen'''
@@ -146,7 +102,7 @@ class IBM:
                     self.Basals=np.append(self.Basals,i)
                 i+=1
             self.Predators=np.setdiff1d(self.all_species,self.Basals)
-
+    """
             
     def get_params(self):
         '''It prints and return all the ecosystem parameters'''
@@ -154,7 +110,8 @@ class IBM:
         print("Area=",self.Area,",Method:",self.method)
         print("E_rep=",self.E_rep,",Death probability=",self.P_death,",Max E=",self.max_E,",delta=",self.delta)
         print("l=",self.l,",dissipation=",self.d,",basals growth=",self.b)
-        return [self.Area,self.E_rep,self.P_death,self.max_E,self.delta,self.l,self.d,self.b]
+        return [self.Area,self.max_E,self.l,self.b,self.d,self.delta,self.P_death,self.E_rep]
+
     
     def set_params(self,par_arr):
         '''The given argument array modifies all the ecosystem parameters in this order: Area, E_rep, P_death, max_E, delta, l, d, b'''
@@ -520,6 +477,31 @@ class RM_IBM (IBM):
         self.G=nx.DiGraph()
         
         
+    def build_interactions(self):
+        for pred in self.Predators:
+            #Inizialmente tutte le specie diverse da pred sono potenziali prede
+            preys=np.setdiff1d(self.all_species,pred)
+            
+                
+            #RIMUOVO DALLE POSSIBILI PREYS DI PREDATORE GLI ANIMALI DI CUI LUI È PREDA
+            preys=np.setdiff1d(preys,self.get_predators(pred))
+                        
+            #controllo se il num. max di prede l è minore delle prede disponibili
+            if (len(preys)>=self.l):
+                    
+                #estraggo l prede casualmente e inizializzo i coefficienti di interazione predatore-preda     
+                for idx in random.sample(list(preys),k=self.l):
+                    self.C[pred][idx]=np.random.uniform(0,self.max_E)
+                        
+            else:
+                #ridefinisco il max numero di prede
+                max_n=len(preys)
+                for idx in random.sample(list(preys),max_n):
+                    self.C[pred][idx]=np.random.uniform(0,self.max_E)
+                    
+        
+        
+        
 class CM_IBM(IBM):
     
     def __init__(self,Area,overall_species):
@@ -554,7 +536,33 @@ class CM_IBM(IBM):
         self.G=nx.DiGraph()
         
         
+    def build_interactions(self):
+        #defining prey probability as costant/num. of species
+        prob=self.l/len(self.all_species)
+            
+        for predator in self.all_species:
+                
+            #randomly choosing the number of preys
+            chances=np.random.uniform(0,1,size=len(self.all_species[:predator]))
+            n_preys=len(chances[chances<prob])
+                
+            #choosing only preys of species below the predator one
+            preys=np.random.choice(self.all_species[:predator],size=n_preys,replace=False)
+                
+            for prey in preys:
+                self.C[predator][prey]=np.random.uniform(0,self.max_E)
+            #Categorizza le basals species e le animals affinchè il resto del codice sia coerente
+        self.Basals=[]
+        i=0
+            
+        for row in self.C:
+                
+            if (row.any()==0):
+                self.Basals=np.append(self.Basals,i)
+            i+=1
+        self.Predators=np.setdiff1d(self.all_species,self.Basals)
     
     
+        
         
         
