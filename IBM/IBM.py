@@ -117,13 +117,13 @@ class IBM:
         '''The given argument array modifies all the ecosystem parameters in this order: Area, E_rep, P_death, max_E, delta, l, d, b'''
         
         self.Area=par_arr[0]
-        self.E_rep=par_arr[1]
-        self.P_death=par_arr[2]
-        self.max_E=par_arr[3]
-        self.delta=par_arr[4]
-        self.l=par_arr[5]
-        self.d=par_arr[6]
-        self.b=par_arr[7]
+        self.max_E=par_arr[1]
+        self.l=par_arr[2]
+        self.b=par_arr[3]
+        self.d=par_arr[4]
+        self.delta=par_arr[5]
+        self.P_death=par_arr[6]
+        self.E_rep=par_arr[7]
         print("Parameters has been succesfully changed")
         print("New parameters are:")
         self.get_params()
