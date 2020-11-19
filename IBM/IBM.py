@@ -498,6 +498,11 @@ class RM_IBM (IBM):
                 max_n=len(preys)
                 for idx in random.sample(list(preys),max_n):
                     self.C[pred][idx]=np.random.uniform(0,self.max_E)
+                
+                
+    def basals_counts(self):
+        count=np.shape(np.where(self.Individuals[:,1]<self.Predators[0]))[1]
+        return count
                     
         
         
@@ -563,6 +568,16 @@ class CM_IBM(IBM):
         self.Predators=np.setdiff1d(self.all_species,self.Basals)
     
     
-        
+    def basals_counts(self):
+        '''Returns the number of living Basals individuals'''
+        #Esegui solo se vi è almeno una specie animale
+        if(len(self.Basals)!=len(self.all_species)):
+            count=0
+            for species in self.Individuals[:,1]:
+                if (species in self.Basals):
+                    count+=1            
+        else:
+            count=len(self.Individuals)
+        return count
         
         
