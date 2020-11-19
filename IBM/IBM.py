@@ -133,21 +133,6 @@ class IBM:
         '''sets ecosystem parameters with prefixed default values'''
         
         self.set_params(self.default_par)
-        
-    def basals_counts(self):
-        '''Returns the number of living Basals individuals'''
-        #Esegui solo se vi è almeno una specie animale
-        if(len(self.Basals)!=len(self.all_species)):
-            if (self.method=="CM"):
-                count=0
-                for species in self.Individuals[:,1]:
-                    if (species in self.Basals):
-                        count+=1
-            elif(self.method=="RM"):
-                count=np.shape(np.where(self.Individuals[:,1]<self.Predators[0]))[1]
-        else:
-            count=len(self.Individuals)
-        return count
     
 
 
