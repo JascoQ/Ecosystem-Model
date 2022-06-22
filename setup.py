@@ -41,7 +41,7 @@ setup(
     #packages=setuptools.find_packages(),
     #install_requires= get_requirements(),
     install_requires=['networkx==2.3',
-		      'numpy==1.16.2',
+		      'numpy==1.22.0',
 		      'scipy==1.2.1',
 		      'matplotlib==3.0.3'],
     long_description=long_description,
