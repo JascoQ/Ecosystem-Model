@@ -42,7 +42,7 @@ setup(
     #install_requires= get_requirements(),
     install_requires=['networkx==2.3',
 		      'numpy==1.16.2',
-		      'scipy==1.2.1',
+		      'scipy==1.10.0',
 		      'matplotlib==3.0.3'],
     long_description=long_description,
     long_description_content_type="text/markdown",
